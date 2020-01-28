@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title><%= id %>번 글</title>
+</head>
+
+<body>
+  <h1><%= title %></h1>
+  <h2><%= content %></h2>
+  <form action="/" method="GET">
+    <input type="submit" value="글 목록으로">
+  </form>
+
+  <form action="/delete/<%= id %>" method="GET">
+    <input type="submit" value="글 삭제">
+  </form>
+
+  <form action="/modify/<%= id %>" method="GET">
+    <input type="submit" value="글 수정">
+  </form>
+</body>
+
+</html>
