@@ -7,9 +7,9 @@
 </head>
 
 <body>
-  <% for (var [index, article] of Object.entries(articles)) { %>
-    <h2 onclick="moveToViewPage('<%= index %>')"><%= article.title %></h2>
-  <% } %>
+  <% articles.forEach(article => { %>
+    <h2 onclick="moveToViewPage('<%= article.id %>')"><%= article.title %></h2>
+  <% }) %>
 
   <input type="button" value="게시글 작성" onclick="movetoWritePage()"/>
   

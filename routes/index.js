@@ -1,29 +1,62 @@
 var express = require('express');
 var router = express.Router();
-
+var index;
 const name = "게시판 서버"
-var index = 2;
-var articles = {'0': {title: "title1", content: "content1"}, '1': {title: "title2", content: "content2"}};
+var articles = {};
+
+/* --- database settings finished --- */
+
+var sqlite3 = require('sqlite3').verbose();
+var db = new sqlite3.Database('./db/articles.db', (err) => {
+  if ( err ) {
+    return console.error(err.message);
+  } else {
+    console.log("Connected to database file");
+  }
+});
+db.run("CREATE TABLE IF NOT EXISTS articles (id INTEGER, title TEXT(100), content TEXT(10000))");
+db.get("SELECT MAX(id) FROM articles", (err, row) => {
+  index = row['MAX(id)'] + 1;
+})
+
+/* --- database settings finished --- */
 
 /* GET home page. */
-router.get('/', function(req, res, next) {
-  res.render('index', { name: name, articles: articles });
+router.get('/', async function (req, res, next) {
+  const rows = await new Promise((resolve, reject) => {
+    db.all("SELECT * from articles", (err, rows) => {
+      if (err != null) {
+        reject(err);
+        return;
+      }
+      resolve(rows);
+    });
+  });
+  res.render('index', { name: name, articles: rows });
 });
 
 /* POST an article */
-router.post('/', function(req, res, next) {
+router.post('/', async function(req, res, next) {
   var title = req.body.title;
   var content = req.body.content;
 
-  articles[index] = {title: title, content: content};
+  await new Promise((resolve, reject)=>{
+    db.run(`INSERT INTO articles (id, title, content) VALUES(${index}, '${title}', '${content}')`, (err) => {
+      if ( err != null ) {
+        reject(err);
+        return;
+      }
+      resolve();
+    });
+  });
   index++;
-  res.render('index', { name: name, articles: articles });
+  res.render('articleView', { id: index-1, title: title, content: content });
 });
 
 /* DELETE an article */
 router.get('/delete/:id', function(req, res, next) {
   var id = req.params.id;
-  delete articles[id];
+  db.run(`DELETE FROM articles WHERE id=${id}`);
   
   res.render('index', { name: name, articles: articles });
 });
