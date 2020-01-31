@@ -22,17 +22,10 @@ db.get("SELECT MAX(id) FROM articles", (err, row) => {
 /* --- database settings finished --- */
 
 /* GET home page. */
-router.get('/', async function (req, res, next) {
-  const rows = await new Promise((resolve, reject) => {
-    db.all("SELECT * from articles", (err, rows) => {
-      if (err != null) {
-        reject(err);
-        return;
-      }
-      resolve(rows);
-    });
+router.get('/', function (req, res, next) {
+  db.all("SELECT * from articles", (err, rows) => {
+    res.render('index', { name: name, articles: rows });
   });
-  res.render('index', { name: name, articles: rows });
 });
 
 /* POST an article */
@@ -54,34 +47,48 @@ router.post('/', async function(req, res, next) {
 });
 
 /* DELETE an article */
-router.get('/delete/:id', function(req, res, next) {
+router.get('/delete/:id', async function(req, res, next) {
   var id = req.params.id;
-  db.run(`DELETE FROM articles WHERE id=${id}`);
-  
-  res.render('index', { name: name, articles: articles });
+  db.serialize(()=>{
+    db.run(`DELETE FROM articles WHERE id=${id}`);
+    db.all("SELECT * from articles", (err, rows) => {
+      res.render('index', { name: name, articles: rows });
+    });
+  });
 });
 
+/* go to article write page */
 router.get('/write', function(req, res, next) {
   res.render('articleWrite');
 });
 
+/* go to a certain article page */
 router.get('/view', function(req, res, next) {
   const id = req.query.id;
-  res.render('articleView', { id: id, title: articles[id].title, content: articles[id].content });
+  db.get(`SELECT title, content FROM articles WHERE id=${id}`, (err, row) => {
+    res.render('articleView', { id: id, title: row.title, content: row.content });
+  });
 });
 
+/* go to article modify page */
 router.get('/modify/:id', function(req, res, next) {
   var id = req.params.id;
-  res.render('articleModify', { id: id, title: articles[id].title, content: articles[id].content });
+  db.get(`SELECT title, content FROM articles WHERE id=${id}`, (err, row) => {
+    res.render('articleModify', { id: id, title: row.title, content: row.content });
+  });
 });
 
+/* modify an article */
 router.post('/:id', function(req, res, next) {
   var id = req.params.id;
   var title = req.body.title;
   var content = req.body.content;
 
-  articles[id] = {title: title, content: content};
-  res.render('articleView', { id: id, title: title, content: content});
+  db.serialize(()=>{
+    db.run(`UPDATE articles SET title='${title}', content='${content}' WHERE id=${id}`, (err) => {
+      res.render('articleView', { id: id, title: title, content: content});
+    });
+  });
 });
 
 module.exports = router;
